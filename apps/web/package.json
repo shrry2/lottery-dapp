@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@lottery-dapp/web",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -11,14 +11,13 @@
   "dependencies": {
     "next": "12.0.8",
     "react": "17.0.2",
-    "react-dom": "17.0.2",
-    "ui": "*"
+    "react-dom": "17.0.2"
   },
   "devDependencies": {
     "eslint": "7.32.0",
-    "eslint-config-custom": "*",
+    "@lottery-dapp/eslint-config": "*",
     "next-transpile-modules": "9.0.0",
-    "tsconfig": "*",
+    "@lottery-dapp/tsconfig": "*",
     "@types/node": "^17.0.12",
     "@types/react": "17.0.37",
     "typescript": "^4.5.3"
