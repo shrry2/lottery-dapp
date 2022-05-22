@@ -13,6 +13,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
+    "hardhat": "^2.9.6",
     "prettier": "2.6.2",
     "turbo": "latest"
   },
