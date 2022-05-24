@@ -3,18 +3,19 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npm run hardhat:node",
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "hardhat:accounts": "hardhat accounts",
+    "hardhat:node": "hardhat node"
   },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/shrry2/lottery-dapp.git"
   },
-  "author": "",
   "license": "UNLICENSED",
-  "bugs": {
-    "url": "https://github.com/shrry2/lottery-dapp/issues"
-  },
-  "homepage": "https://github.com/shrry2/lottery-dapp#readme"
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.6.0"
+  }
 }
