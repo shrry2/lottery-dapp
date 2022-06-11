@@ -11,7 +11,7 @@
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,sol}\""
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.6",
@@ -26,7 +26,8 @@
     "ethers": "^5.6.7",
     "hardhat": "^2.9.6",
     "hardhat-gas-reporter": "^1.0.8",
-    "prettier": "2.6.2",
+    "prettier": "^2.6.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solidity-coverage": "^0.7.21",
     "ts-node": "^10.8.0",
     "turbo": "latest"
