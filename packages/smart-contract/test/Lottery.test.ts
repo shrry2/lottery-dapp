@@ -324,7 +324,7 @@ describe('Lottery', () => {
       expect(lotteryBalanceBeforeDraw).to.eq(feeAmount);
       // draw the lottery
       await lottery.draw();
-      // check if fee is transferred to the winner
+      // check if fee is kept in the contract
       expect(await mockToken.balanceOf(lottery.address)).to.eq(
         lotteryBalanceBeforeDraw
       );
