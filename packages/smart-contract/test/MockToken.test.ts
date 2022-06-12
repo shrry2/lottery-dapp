@@ -20,9 +20,7 @@ describe('MockToken', () => {
     const totalSupply = await mockToken.totalSupply();
 
     const expectedInitialSupply = '1000000';
-    expect(divByDecimal(totalSupply).toString()).to.equal(
-      expectedInitialSupply
-    );
+    expect(divByDecimal(totalSupply).toString()).to.eq(expectedInitialSupply);
   });
 
   it('deployer should hold all the tokens right after deploy', async () => {
@@ -30,6 +28,6 @@ describe('MockToken', () => {
 
     expect(
       await mockToken.balanceOf(await mockToken.signer.getAddress())
-    ).to.equal(totalSupply);
+    ).to.eq(totalSupply);
   });
 });

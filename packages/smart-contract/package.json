@@ -17,5 +17,8 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@openzeppelin/contracts": "^4.6.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.0-beta.2"
   }
 }

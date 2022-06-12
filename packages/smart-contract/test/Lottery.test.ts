@@ -1,4 +1,4 @@
-import { expect, use } from 'chai';
+import { assert, expect, use } from 'chai';
 import { solidity } from 'ethereum-waffle';
 import { ethers } from 'hardhat';
 import { before } from 'mocha';
@@ -7,6 +7,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 import { Lottery, MockToken } from '../typechain-types';
 import { ContractTransaction } from 'ethers';
+import { anyUint } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 use(solidity);
 
@@ -21,7 +22,6 @@ describe('Lottery', () => {
   let manager2: SignerWithAddress;
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
-  let prizePool: SignerWithAddress;
 
   before(async () => {
     // setup accounts
@@ -31,7 +31,6 @@ describe('Lottery', () => {
     manager2 = accounts[2];
     user1 = accounts[3];
     user2 = accounts[4];
-    prizePool = accounts[5];
   });
 
   /**
@@ -54,7 +53,6 @@ describe('Lottery', () => {
     const Lottery = await ethers.getContractFactory('Lottery');
     lottery = (await Lottery.deploy(
       mockToken.address,
-      prizePool.address,
       TICKET_PRICE,
       FEE_RATE
     )) as Lottery;
@@ -63,19 +61,19 @@ describe('Lottery', () => {
     DEFAULT_ADMIN_ROLE = await lottery.DEFAULT_ADMIN_ROLE();
     MANAGER_ROLE = await lottery.MANAGER_ROLE();
 
-    // approve lottery contract to spend tokens of prize pool
-    await mockToken.connect(prizePool).approve(lottery.address, APPROVE_AMOUNT);
+    await lottery.grantRole(MANAGER_ROLE, manager1.address);
+    await lottery.grantRole(MANAGER_ROLE, manager2.address);
   });
 
   describe('Constructor', () => {
     it('should set initial ticket price on deploy', async () => {
       const ticketPrice = await lottery.ticketPrice();
-      expect(ticketPrice).to.equal(TICKET_PRICE);
+      expect(ticketPrice).to.eq(TICKET_PRICE);
     });
 
     it('should set fee rate on deploy', async () => {
       const feeRate = await lottery.feeRate();
-      expect(feeRate).to.equal(FEE_RATE);
+      expect(feeRate).to.eq(FEE_RATE);
     });
   });
 
@@ -92,29 +90,6 @@ describe('Lottery', () => {
 
   describe('Access Control', () => {
     /**
-     * Role Granting
-     */
-
-    it('should grant admin role to owner after deploy', async () => {
-      expect(await lottery.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.be
-        .true;
-      expect(await lottery.hasRole(DEFAULT_ADMIN_ROLE, manager1.address)).to.be
-        .false;
-    });
-
-    it('should allow owner to set manager1 as manager', async () => {
-      expect(await lottery.hasRole(MANAGER_ROLE, manager1.address)).to.be.false;
-      await lottery.grantRole(MANAGER_ROLE, manager1.address);
-      expect(await lottery.hasRole(MANAGER_ROLE, manager1.address)).to.be.true;
-    });
-
-    it('should allow owner to set manager2 as manager', async () => {
-      expect(await lottery.hasRole(MANAGER_ROLE, manager2.address)).to.be.false;
-      await lottery.grantRole(MANAGER_ROLE, manager2.address);
-      expect(await lottery.hasRole(MANAGER_ROLE, manager2.address)).to.be.true;
-    });
-
-    /**
      * setTicketPrice
      */
 
@@ -124,7 +99,7 @@ describe('Lottery', () => {
         .to.emit(lottery, 'TicketPriceChanged')
         .withArgs(newTicketPrice);
       const updatedTicketPrice = await lottery.ticketPrice();
-      expect(updatedTicketPrice).to.equal(newTicketPrice);
+      expect(updatedTicketPrice).to.eq(newTicketPrice);
     });
 
     it('should not allow non-admin to set ticket price', async () => {
@@ -150,7 +125,7 @@ describe('Lottery', () => {
         .to.emit(lottery, 'FeeRateChanged')
         .withArgs(newFeeRate);
       const updatedFeeRate = await lottery.feeRate();
-      expect(updatedFeeRate).to.equal(newFeeRate);
+      expect(updatedFeeRate).to.eq(newFeeRate);
     });
 
     it('should not allow setting invalid fee rate', async () => {
@@ -165,33 +140,29 @@ describe('Lottery', () => {
 
   describe('For Users', () => {
     it('should not allow user1 without budget to buy 1 ticket', async () => {
-      await expect(lottery.connect(user1).buyTicket(1)).to.be.revertedWith(
-        "You don't have enough tokens"
-      );
+      await expect(lottery.connect(user1).buyTicket(1)).to.be.reverted;
     });
 
     it('should not allow user1 without enough budget to buy 2 tickets', async () => {
       // transfer tokens only enough to buy 1 ticket
       await mockToken.connect(owner).transfer(user1.address, TICKET_PRICE);
-      expect(await mockToken.balanceOf(user1.address)).to.equal(TICKET_PRICE);
+      expect(await mockToken.balanceOf(user1.address)).to.eq(TICKET_PRICE);
       // Allow Lottery to spend tokens
       await mockToken.connect(user1).approve(lottery.address, TICKET_PRICE);
-      await expect(lottery.connect(user1).buyTicket(2)).to.be.revertedWith(
-        "You don't have enough tokens"
-      );
+      await expect(lottery.connect(user1).buyTicket(2)).to.be.reverted;
     });
 
     it('should allow user1 with exact budget to buy 1 ticket', async () => {
       // transfer tokens only enough to buy 1 ticket
       await mockToken.connect(owner).transfer(user1.address, TICKET_PRICE);
-      expect(await mockToken.balanceOf(user1.address)).to.equal(TICKET_PRICE);
+      expect(await mockToken.balanceOf(user1.address)).to.eq(TICKET_PRICE);
       // Allow Lottery to spend tokens
       await mockToken.connect(user1).approve(lottery.address, TICKET_PRICE);
       await expect(lottery.connect(user1).buyTicket(1))
         .to.emit(lottery, 'TicketPurchased')
         .withArgs(user1.address, 1, TICKET_PRICE);
       // check if user1 has 1 ticket
-      expect(await lottery.ticketsOf(user1.address)).to.equal(1);
+      expect(await lottery.ticketsOf(user1.address)).to.eq(1);
     });
 
     it('should allow user1 to buy 100 tickets', async () => {
@@ -204,7 +175,7 @@ describe('Lottery', () => {
         .to.emit(lottery, 'TicketPurchased')
         .withArgs(user1.address, 100, TICKET_PRICE * 100);
       // check if user1 has 100 tickets
-      expect(await lottery.ticketsOf(user1.address)).to.equal(100);
+      expect(await lottery.ticketsOf(user1.address)).to.eq(100);
     });
 
     it('should allow multiple users to buy tickets', async () => {
@@ -222,39 +193,45 @@ describe('Lottery', () => {
         .to.emit(lottery, 'TicketPurchased')
         .withArgs(user1.address, 100, TICKET_PRICE * 100);
       // check if user1 has 100 tickets
-      expect(await lottery.ticketsOf(user1.address)).to.equal(100);
+      expect(await lottery.ticketsOf(user1.address)).to.eq(100);
 
       // buy 200 tickets for user2
       await expect(lottery.connect(user2).buyTicket(200))
         .to.emit(lottery, 'TicketPurchased')
         .withArgs(user2.address, 200, TICKET_PRICE * 200);
       // check if user1 has 100 tickets
-      expect(await lottery.ticketsOf(user2.address)).to.equal(200);
+      expect(await lottery.ticketsOf(user2.address)).to.eq(200);
+    });
+
+    it('should store all the paid amount in the contract', async () => {
+      await purchaseTickets(user1, 100);
+      await purchaseTickets(user2, 200);
+      const paidAmount = (await lottery.ticketPrice()).mul(300);
+      // check if the contract has all the paid amount
+      expect(await mockToken.balanceOf(lottery.address)).to.eq(paidAmount);
     });
 
     it('should store fee in the contract', async () => {
       // buy 100 tickets for user1
       await purchaseTickets(user1, 100);
 
-      const paidAmount = TICKET_PRICE * 100;
-      const feeAmount = (paidAmount * FEE_RATE) / 10000;
+      const paidAmount = (await lottery.ticketPrice()).mul(100);
+      const feeAmount = paidAmount.mul(FEE_RATE).div(10000);
 
       // check if fee is stored in the contract
-      expect(await mockToken.balanceOf(lottery.address)).to.equal(feeAmount);
+      expect(await lottery.withdrawableFeeAmount()).to.eq(feeAmount);
     });
 
-    it('should transfer prize amount to prize pool', async () => {
+    it('should store prize amount in the contract', async () => {
       // buy 100 tickets for user1
       await purchaseTickets(user1, 100);
 
-      const paidAmount = TICKET_PRICE * 100;
-      const feeAmount = (paidAmount * FEE_RATE) / 10000;
-      const prizePoolAmount = paidAmount - feeAmount;
+      const paidAmount = (await lottery.ticketPrice()).mul(100);
+      const feeAmount = paidAmount.mul(FEE_RATE).div(10000);
+      const prizeAmount = paidAmount.sub(feeAmount);
 
-      // check if prize pool is stored in prize pool wallet
-      expect(await mockToken.balanceOf(prizePool.address)).to.equal(
-        prizePoolAmount
-      );
+      // check if prize pool is stored in the contract
+      expect(await lottery.currentPrizePoolAmount()).to.eq(prizeAmount);
     });
   });
 
@@ -272,9 +249,23 @@ describe('Lottery', () => {
       );
     });
 
+    it('should emit Drawn event', async () => {
+      await purchaseTickets(user1, 100);
+      const totalPaidAmount = (await lottery.ticketPrice()).mul(100);
+      const feeAmount = totalPaidAmount.mul(FEE_RATE).div(10000);
+      const prizeAmount = totalPaidAmount.sub(feeAmount);
+      expect(await mockToken.balanceOf(lottery.address)).to.eq(totalPaidAmount);
+      // draw the lottery
+      await expect(lottery.draw())
+        .to.emit(lottery, 'Drawn')
+        .withArgs(anyUint, user1.address, prizeAmount);
+    });
+
+    // test util for parsing Drawn event
     const getDrawResultByDrawTransaction = async (
       drawTransaction: ContractTransaction
     ): Promise<{
+      winningTicket: number;
       winner: string;
       prizeAmount: number;
     }> => {
@@ -288,9 +279,10 @@ describe('Lottery', () => {
         throw new Error('No drawn event emitted');
       }
       const drawnEventDecoded = drawnEvent.decode(drawnEvent.data);
-      const [winner, prizeAmount] = drawnEventDecoded;
+      const [winningTicket, winner, prizeAmount] = drawnEventDecoded;
 
       return {
+        winningTicket,
         winner,
         prizeAmount,
       };
@@ -301,9 +293,9 @@ describe('Lottery', () => {
     it('should pick the winner and transfer the prize to it', async () => {
       await purchaseTickets(user1, 100);
       const balanceBeforeDraw = await mockToken.balanceOf(user1.address);
-      const totalPaidAmount = (await lottery.ticketPrice()).toNumber() * 100;
-      const feeAmount = (totalPaidAmount * FEE_RATE) / 10000;
-      const prizeAmount = totalPaidAmount - feeAmount;
+      const totalPaidAmount = (await lottery.ticketPrice()).mul(100);
+      const feeAmount = totalPaidAmount.mul(FEE_RATE).div(10000);
+      const prizeAmount = totalPaidAmount.sub(feeAmount);
       // draw the lottery
       const drawTransaction = await lottery.draw();
       const drawResult = await getDrawResultByDrawTransaction(drawTransaction);
@@ -316,18 +308,13 @@ describe('Lottery', () => {
 
     it('should keep the fee in the contract', async () => {
       await purchaseTickets(user1, 100);
-      const totalPaidAmount = (await lottery.ticketPrice()).toNumber() * 100;
-      const feeAmount = (totalPaidAmount * FEE_RATE) / 10000;
-      const lotteryBalanceBeforeDraw = await mockToken.balanceOf(
-        lottery.address
-      );
-      expect(lotteryBalanceBeforeDraw).to.eq(feeAmount);
+      const totalPaidAmount = (await lottery.ticketPrice()).mul(100);
+      const feeAmount = totalPaidAmount.mul(FEE_RATE).div(10000);
+      expect(await mockToken.balanceOf(lottery.address)).to.eq(totalPaidAmount);
       // draw the lottery
       await lottery.draw();
       // check if fee is kept in the contract
-      expect(await mockToken.balanceOf(lottery.address)).to.eq(
-        lotteryBalanceBeforeDraw
-      );
+      expect(await mockToken.balanceOf(lottery.address)).to.eq(feeAmount);
     });
 
     // cool down
@@ -357,6 +344,36 @@ describe('Lottery', () => {
 
     // state reset
 
+    it('should push past lottery', async () => {
+      await purchaseTickets(user1, 100);
+      await purchaseTickets(user2, 200);
+
+      const totalCost = (await lottery.ticketPrice()).mul(300);
+      const feeAmount = totalCost.mul(FEE_RATE).div(10000);
+      const prizeAmount = totalCost.sub(feeAmount);
+
+      // draw the lottery and get the timestamp
+      const txReceipt = await lottery.draw().then((tx) => tx.wait());
+      const lastDrawnTimestamp = await ethers.provider
+        .getBlock(txReceipt.blockNumber)
+        .then((block) => block.timestamp);
+
+      const pastLottery = await lottery.pastLotteries(0);
+
+      if (!pastLottery) {
+        assert.fail('pastLottery is not defined');
+      }
+
+      // check jackpot
+      expect(pastLottery.jackpot).to.eq(prizeAmount);
+      // check winning ticket
+      expect(pastLottery.winningTicket).to.be.lt(300);
+      // check winner
+      expect(pastLottery.winner).to.be.oneOf([user1.address, user2.address]);
+      // check drawn timestamp
+      expect(pastLottery.drawnTimestamp).to.be.eq(lastDrawnTimestamp);
+    });
+
     it('should reset player list after draw', async () => {
       // purchase tickets and check if tickets are stored
       await purchaseTickets(user1, 1);
@@ -370,18 +387,6 @@ describe('Lottery', () => {
       // check if player list is reset
       expect(await lottery.ticketsOf(user1.address)).to.eq(0);
       expect(await lottery.ticketsOf(user2.address)).to.eq(0);
-    });
-
-    it('should update last drawn timestamp', async () => {
-      expect(await lottery.lastDrawn()).to.eq(0);
-      await purchaseTickets(user1, 1);
-      // draw the lottery and get the timestamp of the block when it was drawn
-      const txReceipt = await lottery.draw().then((tx) => tx.wait());
-      const lastDrawnTimestamp = await ethers.provider
-        .getBlock(txReceipt.blockNumber)
-        .then((block) => block.timestamp);
-      // check if last drawn timestamp is updated
-      expect(await lottery.lastDrawn()).to.eq(lastDrawnTimestamp);
     });
   });
 
@@ -418,6 +423,21 @@ describe('Lottery', () => {
       expect(await mockToken.balanceOf(owner.address)).to.eq(
         ownerBalanceBeforeDraw.add(feeAmount)
       );
+    });
+
+    it('should reset withdrawable fee amount', async () => {
+      expect(await lottery.withdrawableFeeAmount()).to.eq(0);
+      // purchase tickets
+      await purchaseTickets(user1, 100);
+      const feeAmount = (await lottery.ticketPrice())
+        .mul(100)
+        .mul(FEE_RATE)
+        .div(10000);
+      expect(await lottery.withdrawableFeeAmount()).to.eq(feeAmount);
+      // withdraw the fee
+      await lottery.withdraw();
+      // check if withdrawable fee amount is reset
+      expect(await lottery.withdrawableFeeAmount()).to.eq(0);
     });
   });
 });

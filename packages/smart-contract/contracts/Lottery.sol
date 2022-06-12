@@ -16,41 +16,56 @@ contract Lottery is AccessControl {
   // contract of MockToken
   IERC20 public mockToken;
 
-  // address of the prize pool
-  address payable public prizePoolAddress;
-
   // price of a ticket
   uint256 public ticketPrice;
 
   // fee of the lottery
   uint256 public feeRate = 500; // 5% in two decimal places
 
-  // the time when the last lottery was drawn
-  uint256 public lastDrawn = 0;
+  /**
+   * Past Lotteries
+   */
+
+  // struct for finished lottery
+  struct PastLottery {
+    uint256 jackpot;
+    uint256 winningTicket;
+    address winner;
+    uint256 drawnTimestamp;
+  }
+
+  // array of past lotteries
+  PastLottery[] public pastLotteries;
+
+  /**
+   * Current Lottery
+   */
 
   // purchaser array of the current lottery
-  address[] private players;
+  address[] private currentPlayers;
+
+  // jackpot of the current lottery
+  uint256 public currentPrizePoolAmount;
+
+  // fees that have not been withdrawn yet
+  uint256 public withdrawableFeeAmount;
 
   /* ============ Events ============ */
 
   event TicketPriceChanged(uint256 ticketPrice);
   event FeeRateChanged(uint256 feeRate);
   event TicketPurchased(address buyer, uint256 ticketAmount, uint256 totalCost);
-  event Drawn(address winner, uint256 prizeAmount);
+  event Drawn(uint256 winningTicket, address winner, uint256 prizeAmount);
   event Withdrawn(uint256 feeAmount);
 
   /* ============ Constructor ============ */
 
   constructor(
     address _mockTokenAddress,
-    address payable _prizePoolAddress,
     uint256 _ticketPrice,
     uint256 _feeRate
   ) {
     mockToken = IERC20(_mockTokenAddress);
-    // make sure the balance of prize pool is zero
-    require(mockToken.balanceOf(prizePoolAddress) == 0);
-    prizePoolAddress = _prizePoolAddress;
     ticketPrice = _ticketPrice;
     feeRate = _feeRate;
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -60,30 +75,31 @@ contract Lottery is AccessControl {
 
   // buy ticket
   function buyTicket(uint256 _ticketAmount) external {
-    require(_ticketAmount > 0, 'Ticket amount must be greater than 0');
+    // transfer total cost to this contract
     uint256 totalCost = ticketPrice.mul(_ticketAmount);
-    require(
-      mockToken.balanceOf(msg.sender) >= totalCost,
-      "You don't have enough tokens"
-    );
+    mockToken.transferFrom(msg.sender, address(this), totalCost);
+
+    // store the fee amount
     uint256 fee = totalCost.mul(feeRate).div(10000);
-    // transfer fee to this contract
-    mockToken.transferFrom(msg.sender, address(this), fee);
+    withdrawableFeeAmount = withdrawableFeeAmount.add(fee);
+
+    // store the remaining as current jackpot
     uint256 remaining = totalCost.sub(fee);
-    // transfer remaining to prize pool
-    mockToken.transferFrom(msg.sender, prizePoolAddress, remaining);
+    currentPrizePoolAmount = currentPrizePoolAmount.add(remaining);
+
     // add player to the list
     for (uint256 i = 0; i < _ticketAmount; i++) {
-      players.push(msg.sender);
+      currentPlayers.push(msg.sender);
     }
+
     emit TicketPurchased(msg.sender, _ticketAmount, totalCost);
   }
 
   // purchased tickets
   function ticketsOf(address _player) external view returns (uint256) {
     uint256 count = 0;
-    for (uint256 i = 0; i < players.length; i++) {
-      if (players[i] == _player) {
+    for (uint256 i = 0; i < currentPlayers.length; i++) {
+      if (currentPlayers[i] == _player) {
         count++;
       }
     }
@@ -114,57 +130,73 @@ contract Lottery is AccessControl {
         hasRole(MANAGER_ROLE, msg.sender),
       'Caller is neither an admin nor a manager'
     );
-    require(players.length > 0, 'No players have purchased tickets');
+    require(currentPlayers.length > 0, 'No players have purchased tickets');
 
     // check if 5 minutes have passed since the last draw
     uint256 currentTime = block.timestamp;
-    require(
-      currentTime >= lastDrawn + 5 minutes,
-      'You can only draw once every 5 minutes'
+    if (pastLotteries.length > 0) {
+      require(
+        currentTime >=
+          pastLotteries[pastLotteries.length - 1].drawnTimestamp + 5 minutes,
+        'You can only draw once every 5 minutes'
+      );
+    }
+
+    // determine winner
+    uint256 winningTicket = _pickWinningTicket();
+    address winner = currentPlayers[winningTicket];
+
+    // push the lottery to the past lotteries
+    pastLotteries.push(
+      PastLottery(currentPrizePoolAmount, winningTicket, winner, currentTime)
     );
 
     // prize payment
 
-    // determine winner
-    address winner = _pickWinner();
     // winner gets all of the prize pool
-    uint256 prizeAmount = mockToken.balanceOf(prizePoolAddress);
-    mockToken.transferFrom(prizePoolAddress, winner, prizeAmount);
-
-    // update contract state
-
-    // clear players
-    delete players;
-    // update last drawn time
-    lastDrawn = currentTime;
+    mockToken.transfer(winner, currentPrizePoolAmount);
 
     // emit event
-    emit Drawn(winner, prizeAmount);
+    emit Drawn(winningTicket, winner, currentPrizePoolAmount);
+
+    // reset current lottery state
+
+    // clear players
+    delete currentPlayers;
+
+    // clear prize pool
+    currentPrizePoolAmount = 0;
   }
 
   // withdraw fee
   function withdraw() external {
     require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 'Caller is not an admin');
-    uint256 feeAmount = mockToken.balanceOf(address(this));
-    // transfer all the token stored in this contract to admin
-    mockToken.transfer(msg.sender, feeAmount);
-    emit Withdrawn(feeAmount);
+
+    // transfer the fee stored in this contract to admin
+    mockToken.transfer(msg.sender, withdrawableFeeAmount);
+
+    // emit event
+    emit Withdrawn(withdrawableFeeAmount);
+
+    // reset the fee amount
+    withdrawableFeeAmount = 0;
   }
 
   /* ============ Internal Functions ============ */
 
-  // pick a random player from the list
-  function _pickWinner() internal view returns (address) {
-    // generate random between 0 and players.length - 1
-    uint256 winnerIndex = _random() % players.length;
-    return players[winnerIndex];
+  // pick a random ticket index from the current players
+  function _pickWinningTicket() internal view returns (uint256) {
+    // generate random between 0 and currentPlayers.length - 1
+    return _random() % currentPlayers.length;
   }
 
   // generate a pseudo random number
   function _random() internal view returns (uint256) {
     return
       uint256(
-        keccak256(abi.encodePacked(block.difficulty, block.timestamp, players))
+        keccak256(
+          abi.encodePacked(block.difficulty, block.timestamp, currentPlayers)
+        )
       );
   }
 }
