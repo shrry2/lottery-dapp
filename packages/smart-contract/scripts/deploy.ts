@@ -13,6 +13,12 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
+  const [deployer] = await ethers.getSigners();
+
+  console.log('Deploying contracts with the account:', deployer.address);
+
+  console.log('Account balance:', (await deployer.getBalance()).toString());
+
   // Deploy MockToken
   const MockToken = await ethers.getContractFactory('MockToken');
   const mockToken = await MockToken.deploy();
