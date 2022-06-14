@@ -8,7 +8,8 @@
     "build": "hardhat compile",
     "test": "hardhat test",
     "hardhat:accounts": "hardhat accounts",
-    "hardhat:node": "hardhat node"
+    "hardhat:node": "hardhat node",
+    "deploy:localhost": "hardhat run --network localhost scripts/deploy.ts"
   },
   "repository": {
     "type": "git",
