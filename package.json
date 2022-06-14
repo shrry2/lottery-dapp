@@ -21,6 +21,7 @@
     "@types/jest": "^27.5.1",
     "@types/mocha": "^9.1.1",
     "chai": "^4.3.6",
+    "concurrently": "^7.2.1",
     "dotenv": "^16.0.1",
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.7",

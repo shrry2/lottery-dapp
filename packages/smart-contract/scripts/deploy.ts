@@ -23,7 +23,7 @@ async function main() {
 
   // Deploy Lottery
   const Lottery = await ethers.getContractFactory('Lottery');
-  const lottery = await Lottery.deploy();
+  const lottery = await Lottery.deploy(mockToken.address, 20, 500);
 
   await lottery.deployed();
 
