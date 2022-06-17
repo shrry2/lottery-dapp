@@ -106,6 +106,10 @@ contract Lottery is AccessControl {
     return count;
   }
 
+  function pastLotteryCount() external view returns (uint256) {
+    return pastLotteries.length;
+  }
+
   /* ============ Admin Functions ============ */
 
   // set ticket price

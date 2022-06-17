@@ -1,13 +1,12 @@
+import { anyUint } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect, use } from 'chai';
 import { solidity } from 'ethereum-waffle';
+import { ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
 import { before } from 'mocha';
 
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-
 import { Lottery, MockToken } from '../typechain-types';
-import { ContractTransaction } from 'ethers';
-import { anyUint } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 
 use(solidity);
 
@@ -40,7 +39,6 @@ describe('Lottery', () => {
   let mockToken: MockToken;
 
   let lottery: Lottery;
-  let DEFAULT_ADMIN_ROLE: string;
   let MANAGER_ROLE: string;
 
   beforeEach(async () => {
@@ -58,7 +56,6 @@ describe('Lottery', () => {
     )) as Lottery;
     await lottery.deployed();
 
-    DEFAULT_ADMIN_ROLE = await lottery.DEFAULT_ADMIN_ROLE();
     MANAGER_ROLE = await lottery.MANAGER_ROLE();
 
     await lottery.grantRole(MANAGER_ROLE, manager1.address);
@@ -232,6 +229,27 @@ describe('Lottery', () => {
 
       // check if prize pool is stored in the contract
       expect(await lottery.currentPrizePoolAmount()).to.eq(prizeAmount);
+    });
+
+    it('should return past lottery count', async () => {
+      // it should return 0 when no lottery has been made
+      expect(await lottery.pastLotteryCount()).to.eq(0);
+
+      const drawLottery = async () => {
+        await purchaseTickets(user1, 100);
+        await lottery.draw();
+        await ethers.provider.send('evm_increaseTime', [5 * 60]);
+        await ethers.provider.send('evm_mine', []);
+      };
+
+      // draw once and check if past lottery count is 1
+      await drawLottery();
+      expect(await lottery.pastLotteryCount()).to.eq(1);
+
+      // draw twice and check if past lottery count is 3
+      await drawLottery();
+      await drawLottery();
+      expect(await lottery.pastLotteryCount()).to.eq(3);
     });
   });
 
