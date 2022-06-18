@@ -1,4 +1,7 @@
 import {
+  Alert,
+  AlertIcon,
+  AlertTitle,
   Button,
   FormControl,
   FormLabel,
@@ -143,6 +146,16 @@ export const BuyTicketButton: FC = () => {
                 >
                   Buy
                 </Button>
+
+                {isLoading ? (
+                  <Alert status="info">
+                    <AlertIcon />
+                    <AlertTitle>
+                      Metamask prompt will be shown twice. Please confirm both
+                      of them.
+                    </AlertTitle>
+                  </Alert>
+                ) : null}
               </VStack>
             )}
           </ModalBody>

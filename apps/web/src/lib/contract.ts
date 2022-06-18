@@ -21,6 +21,7 @@ export const mockTokenContract = new Contract(
 /**
  * Lottery
  */
+
 const lotteryInterface = new utils.Interface(LotteryAbi);
 export const lotteryContract = new Contract(
   addresses.lottery[ChainId.Goerli],
