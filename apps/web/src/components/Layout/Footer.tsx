@@ -16,7 +16,7 @@ export const Footer: FC = () => {
       as="footer"
       justifyContent="center"
       alignItems="center"
-      bg="gray.800"
+      bg="blackAlpha.600"
       color="white"
       p={3}
       mt="auto"

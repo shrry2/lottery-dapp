@@ -1,6 +1,6 @@
 import { NextPage } from 'next';
 
-import { Dashboard } from '~/features/Dashboard/routes';
+import { Dashboard } from '~/features/Lottery/routes';
 
 const HomePage: NextPage = () => {
   return <Dashboard />;

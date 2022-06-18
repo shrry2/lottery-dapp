@@ -1,4 +1,4 @@
-import { Box, ChakraProvider, Flex } from '@chakra-ui/react';
+import { Box, ChakraProvider, Container, Flex } from '@chakra-ui/react';
 import { DAppProvider } from '@usedapp/core';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
@@ -21,9 +21,11 @@ const App = ({ Component, pageProps }: AppProps) => {
           bgSize="cover"
           minH="100vh"
         >
-          <Box flexShrink="0">
+          <Box flexShrink="0" pb={10}>
             <Header />
-            <Component {...pageProps} />
+            <Container maxW="container.xl" pt={10}>
+              <Component {...pageProps} />
+            </Container>
           </Box>
           <Footer />
         </Flex>

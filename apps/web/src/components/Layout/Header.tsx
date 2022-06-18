@@ -9,7 +9,6 @@ import {
   Popover,
   Stack,
   Text,
-  useBreakpointValue,
   useDisclosure,
 } from '@chakra-ui/react';
 import { useEthers } from '@usedapp/core';
@@ -17,6 +16,7 @@ import NextLink from 'next/link';
 import { FC } from 'react';
 
 import { routes } from '~/config';
+import { MyTicketModalButton } from '~/features/Lottery/components';
 import { WalletModalButton } from '~/features/Wallet/components';
 
 export const Header: FC = () => {
@@ -27,30 +27,15 @@ export const Header: FC = () => {
   return (
     <Box>
       <Flex
-        bg="gray.800"
+        bg="blackAlpha.600"
         color="white"
         py={{ base: 4 }}
         px={{ base: 4 }}
         align={'center'}
       >
-        <Flex
-          flex={{ base: 1, md: 'auto' }}
-          ml={{ base: -2 }}
-          display={{ base: 'flex', md: 'none' }}
-        >
-          <IconButton
-            onClick={onToggle}
-            icon={
-              isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />
-            }
-            aria-label="Toggle Navigation"
-            colorScheme="white"
-          />
-        </Flex>
-        <Flex flex={{ base: 1 }} justify={{ base: 'center', md: 'start' }}>
+        <Flex flex={{ base: 1 }} justify="start">
           <NextLink href={routes.home} passHref>
             <Link
-              textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
               fontFamily="heading"
               textTransform="uppercase"
               fontWeight="bold"
@@ -58,6 +43,7 @@ export const Header: FC = () => {
                 textDecoration: 'none',
                 color: 'gray.200',
               }}
+              mr={2}
             >
               The Lottery
             </Link>
@@ -72,15 +58,27 @@ export const Header: FC = () => {
           flex={{ base: 1, md: 0 }}
           justify={'flex-end'}
           direction={'row'}
-          spacing={6}
+          spacing={4}
         >
           {account ? (
-            <WalletModalButton />
+            <>
+              <MyTicketModalButton account={account} />
+              <WalletModalButton />
+            </>
           ) : (
             <Button colorScheme="green" onClick={() => activateBrowserWallet()}>
               Connect Wallet
             </Button>
           )}
+          <IconButton
+            onClick={onToggle}
+            icon={
+              isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />
+            }
+            aria-label="Toggle Navigation"
+            colorScheme="white"
+            display={{ base: 'flex', md: 'none' }}
+          />
         </Stack>
       </Flex>
 
@@ -122,7 +120,7 @@ const DesktopNav = () => {
 const MobileNav = () => {
   return (
     <Stack
-      bg="gray.800"
+      bg="blackAlpha.600"
       p={4}
       display={{ md: 'none' }}
       borderTop="1px solid #888"

@@ -1,6 +1,5 @@
 import {
   Alert,
-  AlertDescription,
   AlertIcon,
   AlertTitle,
   Box,
@@ -16,10 +15,11 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { ChainId, useEthers } from '@usedapp/core';
-import { formatUnits } from 'ethers/lib/utils';
 import React, { FC } from 'react';
 
-import { useMockTokenBalance } from '~/features/Wallet/hooks/useMockTokenBalance';
+import { UnsupportedChainAlert } from '~/features/Wallet/components/UnsupportedChainAlert';
+import { useMockTokenBalance } from '~/features/Wallet/contract/useMockTokenBalance';
+import { formatTokenAmount } from '~/utils/formatTokenAmount';
 
 type WalletModalProps = {
   isOpen: boolean;
@@ -30,7 +30,7 @@ export const WalletModal: FC<WalletModalProps> = ({
   isOpen,
   onClose,
 }: WalletModalProps) => {
-  const { chainId, deactivate, account, switchNetwork } = useEthers();
+  const { chainId, deactivate, account } = useEthers();
   const mockTokenBalance = useMockTokenBalance();
 
   return (
@@ -48,20 +48,7 @@ export const WalletModal: FC<WalletModalProps> = ({
                 </Heading>
                 <code>{chainId ? ChainId[chainId] : 'Loading...'}</code>
 
-                {chainId !== ChainId.Goerli ? (
-                  <Alert status="error" mt="3">
-                    <AlertIcon />
-                    <AlertTitle>You are on unsupported chain. </AlertTitle>
-                    <AlertDescription>
-                      <Button
-                        colorScheme="green"
-                        onClick={() => switchNetwork(ChainId.Goerli)}
-                      >
-                        Switch to Goerli
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                ) : null}
+                {chainId !== ChainId.Goerli ? <UnsupportedChainAlert /> : null}
               </Box>
 
               <Box>
@@ -76,7 +63,8 @@ export const WalletModal: FC<WalletModalProps> = ({
                   MockToken Balance
                 </Heading>
                 <code>
-                  {mockTokenBalance ? formatUnits(mockTokenBalance, 18) : 0} MOK
+                  {mockTokenBalance ? formatTokenAmount(mockTokenBalance) : 0}{' '}
+                  MOK
                 </code>
               </Box>
             </VStack>

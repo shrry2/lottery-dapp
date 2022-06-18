@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run typechain:generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typechain:generate": "yarn typechain --target=ethers-v5 ./src/abi/**/*.json --out-dir=./typechain-types"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.0.2",
@@ -14,12 +15,15 @@
     "@emotion/react": "^11.9.3",
     "@emotion/styled": "^11.9.3",
     "@lottery-dapp/smart-contract": "*",
+    "@typechain/ethers-v5": "^10.1.0",
     "@usedapp/core": "^1.0.9",
+    "date-fns": "^2.28.0",
     "ethers": "^5.6.8",
     "framer-motion": "^6.3.11",
     "next": "^12.1.6",
     "react": "^18.1.0",
-    "react-dom": "^18.1.0"
+    "react-dom": "^18.1.0",
+    "typechain": "^8.1.0"
   },
   "devDependencies": {
     "@lottery-dapp/eslint-config": "*",
