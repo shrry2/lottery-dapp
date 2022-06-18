@@ -12,13 +12,17 @@ import {
   useBreakpointValue,
   useDisclosure,
 } from '@chakra-ui/react';
+import { useEthers } from '@usedapp/core';
 import NextLink from 'next/link';
 import { FC } from 'react';
 
 import { routes } from '~/config';
+import { WalletModalButton } from '~/features/Wallet/components';
 
 export const Header: FC = () => {
   const { isOpen, onToggle } = useDisclosure();
+
+  const { account, activateBrowserWallet } = useEthers();
 
   return (
     <Box>
@@ -70,14 +74,13 @@ export const Header: FC = () => {
           direction={'row'}
           spacing={6}
         >
-          <Button
-            fontSize={'sm'}
-            fontWeight={600}
-            colorScheme="green"
-            size={useBreakpointValue({ base: 'sm', md: 'md' })}
-          >
-            Connect Wallet
-          </Button>
+          {account ? (
+            <WalletModalButton />
+          ) : (
+            <Button colorScheme="green" onClick={() => activateBrowserWallet()}>
+              Connect Wallet
+            </Button>
+          )}
         </Stack>
       </Flex>
 
@@ -98,7 +101,7 @@ const DesktopNav = () => {
               <Link
                 p={2}
                 href={navItem.href ?? '#'}
-                fontSize={'sm'}
+                fontSize={'md'}
                 fontWeight={500}
                 color="white"
                 _hover={{

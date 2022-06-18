@@ -1,10 +1,8 @@
 {
   "name": "@lottery-dapp/smart-contract",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.0",
+  "description": "Smart contracts for the Lottery app",
   "scripts": {
-    "dev": "npm run hardhat:node",
     "build": "hardhat compile",
     "test": "hardhat test",
     "hardhat:accounts": "hardhat accounts",
