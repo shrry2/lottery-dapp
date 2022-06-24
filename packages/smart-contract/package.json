@@ -1,14 +1,14 @@
 {
   "name": "@lottery-dapp/smart-contract",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.0",
+  "description": "Smart contracts for the Lottery app",
   "scripts": {
-    "dev": "npm run hardhat:node",
     "build": "hardhat compile",
     "test": "hardhat test",
     "hardhat:accounts": "hardhat accounts",
-    "hardhat:node": "hardhat node"
+    "hardhat:node": "hardhat node",
+    "deploy:localhost": "hardhat run --network localhost scripts/deploy.ts",
+    "deploy:goerli": "hardhat run --network goerli scripts/deploy.ts"
   },
   "repository": {
     "type": "git",
